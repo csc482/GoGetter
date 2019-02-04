@@ -26,4 +26,6 @@ func main(){
 
   }
 
+//TODO: get the JSON object and put it in a struct
+
 }
