@@ -14,62 +14,100 @@ import "net/http"
 import "io/ioutil"
 import "encoding/json"
 import "fmt"
+//import "os"
+//import "bufio"
+import loggly "github.com/jamespearly/loggly"
 
 func main(){
 
   type Currently struct{
 
-    Time string `json:"time"`
+    Time int `json:"time"`
     Summary string `json:"summary"`
-    Icon string `json:"icon"`
-    NearestStorm string `json:"nearestStormDistance"`
-    PrecipIntensity string `json:"precipIntensity"`
-    PrecipIntensityErr string `json:"precipIntensityError"`
-    PrecipProb string `json:"precipProbability"`
+    //Icon string `json:"icon"`
+    //NearestStorm int `json:"nearestStormDistance"`
+    //PrecipIntensity float32 `json:"precipIntensity"`
+    //PrecipIntensityErr float32 `json:"precipIntensityError"`
+    //PrecipProb float32 `json:"precipProbability"`
     PType string `json:"precipType"`
-    Temp string `json:"temperature"`
-    FeelsLike string `json:"apparentTemperature"`
-    DewPt string `json:"dewPoint"`
-    Humidity string `json:"humidity"`
-    Pressure string `json:"pressure"`
-    WindSpd string `json:"windSpeed"`
-    WindGst string `json:"windGust"`
-    WindDir string `json:"windBearing"`
-    CloudCvr string `json:"cloudCover"`
-    UV string `json:"uvIndex"`
-    Visibility string `json:"visibility"`
-    Ozone string `json:"ozone"`
+    Temp float32 `json:"temperature"`
+    FeelsLike float32 `json:"apparentTemperature"`
+    DewPt float32 `json:"dewPoint"`
+    Humidity float32 `json:"humidity"`
+    Pressure float32 `json:"pressure"`
+    WindSpd float32 `json:"windSpeed"`
+    //WindGst float32 `json:"windGust"`
+    WindDir int `json:"windBearing"`
+    //CloudCvr float32 `json:"cloudCover"`
+    //UV int `json:"uvIndex"`
+    //Visibility float32 `json:"visibility"`
+    //Ozone float32 `json:"ozone"`
 
   }
 
-
   type Forecast struct{
 
-    Latitude string `json:"latitude"`
-    Longitude string `json:"longitude"`
+    Latitude float32 `json:"latitude"`
+    Longitude float32 `json:"longitude"`
     Timezone string `json:"timezone"`
     Currently Currently `json:"currently"`
 
   }
 
-  var f1 Forecast
+
+   f1:= new(Forecast)
+
+  //[GET USER INPUT FOR KEY]///////////////////////////////////////////////////////////////////////////////
+
+  /*fmt.Println("Enter key:")
+  input := bufio.NewReader(os.Stdin)
+  key, _ := input.ReadString('\n')*/
+
+  //1f960db8bf1129b90c3ee6e265c92924
   resp, err := http.Get("https://api.darksky.net/forecast/1f960db8bf1129b90c3ee6e265c92924/47.8267,-122.4233")
 
   if err == nil{
 
-    if resp != nil{
+  //[GET RESPONSE]/////////////////////////////////////////////////////////////////////////////////////////
 
-      body, err := ioutil.ReadAll(resp.Body) //get response
-      defer resp.Body.Close()
+    body, err := ioutil.ReadAll(resp.Body)
+    defer resp.Body.Close()
 
+    if err == nil {
+
+      //log.Println(string(body)) //print response
+
+  //[UNMARSHALLING]////////////////////////////////////////////////////////////////////////////////////////
+
+      err := json.Unmarshal(body, &f1)
       if err == nil {
 
-        fmt.Println("wow")
-        //log.Println(string(body)) //print response
-        json.Unmarshal(body, &f1)
-        fmt.Printf("%+v\n", f1)
+      //fmt.Println("unmarshal success!")
 
-      }
+      } else { fmt.Println(err) }
+
+      fmt.Printf("%+v\n", f1)
+
+  //[REPORTING TO LOGGLY]//////////////////////////////////////////////////////////////////////////////////
+      
+      var tag string
+      tag = "GoGetter"
+
+      //counter, err := json.Marshal(f1)
+      //if err != nil {
+
+        //fmt.Println(err)
+
+      //} else {
+
+      //var numBytes int = len(counter)
+      //var numBytes = string(len(counter))
+      breadGetter := loggly.New(tag)
+      //echo := breadGetter.EchoSend("info", "Successful API Pull of " + numBytes + " bytes!")
+      echo := breadGetter.EchoSend("info", "Successful API Pull!")
+      fmt.Println(echo)
+
+      //}
 
     }
 
