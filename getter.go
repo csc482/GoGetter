@@ -5,6 +5,8 @@
    >> report results (or errors) to Loggly.
 */
 
+//golang theme: Railscasts Black Improved
+
 ///////////////////////////////[LET'S GET THIS BREAD]/////////////////////////////////
 
 package main
@@ -17,8 +19,10 @@ import "fmt"
 //import "os"
 //import "bufio"
 import loggly "github.com/jamespearly/loggly"
+import "time"
 
 func main(){
+
 
   type Currently struct{
 
@@ -54,63 +58,67 @@ func main(){
 
   }
 
+   for {
 
-   f1:= new(Forecast)
+     f1:= new(Forecast)
 
   //[GET USER INPUT FOR KEY]///////////////////////////////////////////////////////////////////////////////
 
-  /*fmt.Println("Enter key:")
-  input := bufio.NewReader(os.Stdin)
-  key, _ := input.ReadString('\n')*/
+    /*fmt.Println("Enter key:")
+    input := bufio.NewReader(os.Stdin)
+    key, _ := input.ReadString('\n')*/
 
-  //1f960db8bf1129b90c3ee6e265c92924
-  resp, err := http.Get("https://api.darksky.net/forecast/1f960db8bf1129b90c3ee6e265c92924/47.8267,-122.4233")
+    //1f960db8bf1129b90c3ee6e265c92924
+    resp, err := http.Get("https://api.darksky.net/forecast/1f960db8bf1129b90c3ee6e265c92924/47.8267,-122.4233")
 
-  if err == nil{
+    if err == nil{
 
-  //[GET RESPONSE]/////////////////////////////////////////////////////////////////////////////////////////
+    //[GET RESPONSE]/////////////////////////////////////////////////////////////////////////////////////////
 
-    body, err := ioutil.ReadAll(resp.Body)
-    defer resp.Body.Close()
+      body, err := ioutil.ReadAll(resp.Body)
+      defer resp.Body.Close()
 
-    if err == nil {
+      if err == nil {
 
-      //log.Println(string(body)) //print response
+        //log.Println(string(body)) //print response
 
   //[UNMARSHALLING]////////////////////////////////////////////////////////////////////////////////////////
 
-      err := json.Unmarshal(body, &f1)
-      if err == nil {
+        err := json.Unmarshal(body, &f1)
+        if err == nil {
 
-      //fmt.Println("unmarshal success!")
+        //fmt.Println("unmarshal success!")
 
-      } else { fmt.Println(err) }
+        } else { fmt.Println(err) }
 
-      fmt.Printf("%+v\n", f1)
+        fmt.Printf("%+v\n", f1)
 
   //[REPORTING TO LOGGLY]//////////////////////////////////////////////////////////////////////////////////
       
-      var tag string
-      tag = "GoGetter"
+        var tag string
+        tag = "GoGetter"
 
-      //counter, err := json.Marshal(f1)
-      //if err != nil {
+        //counter, err := json.Marshal(f1)
+        //if err != nil {
 
-        //fmt.Println(err)
+          //fmt.Println(err)
 
-      //} else {
+        //} else {
 
-      //var numBytes int = len(counter)
-      //var numBytes = string(len(counter))
-      breadGetter := loggly.New(tag)
-      //echo := breadGetter.EchoSend("info", "Successful API Pull of " + numBytes + " bytes!")
-      echo := breadGetter.EchoSend("info", "Successful API Pull!")
-      fmt.Println(echo)
+        //var numBytes int = len(counter)
+        //var numBytes = string(len(counter))
+        breadGetter := loggly.New(tag)
+        //echo := breadGetter.EchoSend("info", "Successful API Pull of " + numBytes + " bytes!")
+        echo := breadGetter.EchoSend("info", "Successful API Pull!")
+        fmt.Println(echo)
 
-      //}
+        //}
+
+      }
 
     }
 
+  time.Sleep(10 * time.Second)
   }
 
 }
