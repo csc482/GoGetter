@@ -1,25 +1,24 @@
-/* TODO: 
-   >> periodically collect formatted data via API requests
-      [UPDATE: this will be done using linux "watch"]
-   >> display this data on the console
-   >> report results (or errors) to Loggly.
-*/
-
 //golang theme: Railscasts Black Improved
 
 ///////////////////////////////[LET'S GET THIS BREAD]/////////////////////////////////
 
 package main
 
-import "net/http"
-//import "log"
-import "io/ioutil"
-import "encoding/json"
-import "fmt"
-//import "os"
-//import "bufio"
-import loggly "github.com/jamespearly/loggly"
-import "time"
+import (
+  "net/http"
+  //"log"
+  "io/ioutil"
+  "encoding/json"
+  "fmt"
+  //"os"
+  //"bufio"
+  loggly "github.com/jamespearly/loggly"
+  "time"
+  "github.com/aws/aws-sdk-go/aws"
+  "github.com/aws/aws-sdk-go/aws/session"
+  "github.com/aws/aws-sdk-go/service/dynamodb"
+  "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+)
 
 func main(){
 
@@ -62,7 +61,7 @@ func main(){
 
      f1:= new(Forecast)
 
-  //[GET USER INPUT FOR KEY]///////////////////////////////////////////////////////////////////////////////
+//[GET USER INPUT FOR KEY]/////////////////////////////////////////////////////////////////////////
 
     /*fmt.Println("Enter key:")
     input := bufio.NewReader(os.Stdin)
@@ -73,50 +72,58 @@ func main(){
 
     if err == nil{
 
-    //[GET RESPONSE]/////////////////////////////////////////////////////////////////////////////////////////
+//[GET RESPONSE]///////////////////////////////////////////////////////////////////////////////////
 
       body, err := ioutil.ReadAll(resp.Body)
       defer resp.Body.Close()
 
       if err == nil {
 
-        //log.Println(string(body)) //print response
-
-  //[UNMARSHALLING]////////////////////////////////////////////////////////////////////////////////////////
+//[UNMARSHALLING]//////////////////////////////////////////////////////////////////////////////////
 
         err := json.Unmarshal(body, &f1)
         if err == nil {
-
-        //fmt.Println("unmarshal success!")
 
         } else { fmt.Println(err) }
 
         fmt.Printf("%+v\n", f1)
 
-  //[REPORTING TO LOGGLY]//////////////////////////////////////////////////////////////////////////////////
+//[LOGGLY]/////////////////////////////////////////////////////////////////////////////////////////
       
         var tag string
         tag = "GoGetter"
-
-        //counter, err := json.Marshal(f1)
-        //if err != nil {
-
-          //fmt.Println(err)
-
-        //} else {
-
-        //var numBytes int = len(counter)
-        //var numBytes = string(len(counter))
         breadGetter := loggly.New(tag)
-        //echo := breadGetter.EchoSend("info", "Successful API Pull of " + numBytes + " bytes!")
         echo := breadGetter.EchoSend("info", "Successful API Pull!")
         fmt.Println(echo)
-
-        //}
 
       }
 
     }
+
+//[DYNAMODB]////////////////////////////////////////////////////////////////////////////////////////
+
+  config := &aws.Config{
+      Region:   aws.String("us-east-1"),
+      Endpoint: aws.String("http://localhost:8000"), //this isn't the right string...
+  }
+
+  sess := session.Must(session.NewSession(config))
+  svc := dynamodb.New(sess)
+
+  av, err := dynamodbattribute.MarshalMap(f1)
+
+  input := &dynamodb.PutItemInput{
+      Item:      av,
+      TableName: aws.String("DarkSky"),
+  }
+
+  _, err = svc.PutItem(input)
+      if err != nil {
+      fmt.Println(err.Error())
+      return
+  }
+
+  fmt.Printf("it worked\n")
 
   time.Sleep(10 * time.Second)
   }
