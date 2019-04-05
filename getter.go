@@ -6,12 +6,10 @@ package main
 
 import (
   "net/http"
-  //"log"
   "io/ioutil"
   "encoding/json"
   "fmt"
   //"os"
-  //"bufio"
   loggly "github.com/jamespearly/loggly"
   "time"
   "github.com/aws/aws-sdk-go/aws"
@@ -25,7 +23,7 @@ func main(){
 
   type Currently struct{
 
-    Time int `json:"time"`
+    //Time int `json:"time"`
     Summary string `json:"summary"`
     //Icon string `json:"icon"`
     //NearestStorm int `json:"nearestStormDistance"`
@@ -50,6 +48,7 @@ func main(){
 
   type Forecast struct{
 
+    Time time.Time
     Latitude float32 `json:"latitude"`
     Longitude float32 `json:"longitude"`
     Timezone string `json:"timezone"`
@@ -57,29 +56,34 @@ func main(){
 
   }
 
-   for {
+//[SETUP DYNAMODB]////////////////////////////////////////////////////////////
+
+  sess := session.Must(session.NewSession(&aws.Config{
+       Region: aws.String("us-east-1"),
+  }))
+
+  svc := dynamodb.New(sess)
+
+  for {
 
      f1:= new(Forecast)
 
-//[GET USER INPUT FOR KEY]/////////////////////////////////////////////////////////////////////////
+//[GET API KEY]///////////////////////////////////////////////////////////////
 
-    /*fmt.Println("Enter key:")
-    input := bufio.NewReader(os.Stdin)
-    key, _ := input.ReadString('\n')*/
+    //key := os.Getenv("DARKSKY") //doesn't work?? Need system restart??
 
-    //1f960db8bf1129b90c3ee6e265c92924
     resp, err := http.Get("https://api.darksky.net/forecast/1f960db8bf1129b90c3ee6e265c92924/47.8267,-122.4233")
 
     if err == nil{
 
-//[GET RESPONSE]///////////////////////////////////////////////////////////////////////////////////
+//[GET RESPONSE]/////////////////////////////////////////////////////////////
 
       body, err := ioutil.ReadAll(resp.Body)
       defer resp.Body.Close()
 
       if err == nil {
 
-//[UNMARSHALLING]//////////////////////////////////////////////////////////////////////////////////
+//[UNMARSHALLING]////////////////////////////////////////////////////////////
 
         err := json.Unmarshal(body, &f1)
         if err == nil {
@@ -88,7 +92,7 @@ func main(){
 
         fmt.Printf("%+v\n", f1)
 
-//[LOGGLY]/////////////////////////////////////////////////////////////////////////////////////////
+//[LOGGLY]///////////////////////////////////////////////////////////////////
       
         var tag string
         tag = "GoGetter"
@@ -100,30 +104,27 @@ func main(){
 
     }
 
-//[DYNAMODB]////////////////////////////////////////////////////////////////////////////////////////
+//[WRITING TO DYNAMODB]//////////////////////////////////////////////////////
 
-  config := &aws.Config{
-      Region:   aws.String("us-east-1"),
-      Endpoint: aws.String("http://localhost:8000"), //this isn't the right string...
+  item := Forecast{
+       Time: time.Now(),
+       Latitude: f1.Latitude,
+       Longitude: f1.Longitude,
   }
 
-  sess := session.Must(session.NewSession(config))
-  svc := dynamodb.New(sess)
-
-  av, err := dynamodbattribute.MarshalMap(f1)
+  mm, err := dynamodbattribute.MarshalMap(item)
 
   input := &dynamodb.PutItemInput{
-      Item:      av,
-      TableName: aws.String("DarkSky"),
+        Item: mm,
+        TableName: aws.String("DarkSky"),
   }
 
-  _, err = svc.PutItem(input)
-      if err != nil {
-      fmt.Println(err.Error())
-      return
+  result, err := svc.PutItem(input)
+  if err != nil {
+    fmt.Println(err)
+  } else {
+  fmt.Println(result)
   }
-
-  fmt.Printf("it worked\n")
 
   time.Sleep(10 * time.Second)
   }
