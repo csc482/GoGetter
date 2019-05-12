@@ -126,7 +126,7 @@ func main(){
   fmt.Println(result)
   }
 
-  time.Sleep(10 * time.Second)
+  time.Sleep(5 * time.Minute)
   }
 
 }
